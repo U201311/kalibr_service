@@ -52,14 +52,16 @@ def run_docker_container(image_name: str, command: str, environment, volumes, cl
         # 等待容器完成
         result = container.wait()
         logs = container.logs()
-        if result["StatusCode"] != None:
+        ## 打印容器日志
+        for log in logs:
+            print(log)
+        if result["StatusCode"] != 0:
             logger.info(f"Docker container: {result} finished with status code {result['StatusCode']}")
             container.remove()
             return {"status": "sucess"}
         
         # 获取容器日志
         
-        print(logs.decode('utf-8'))
         # 删除容器
         container.remove()
         
@@ -83,8 +85,8 @@ def main():
     client = docker.from_env()
     # 示例调用
     environment = {
-        'DISPLAY': ':0',  # 确保 DISPLAY 环境变量正确
-        'QT_X11_NO_MITSHM': '1',
+        # 'DISPLAY': ':0',  # 确保 DISPLAY 环境变量正确
+        # 'QT_X11_NO_MITSHM': '1',
         'BAG': '/data/data/camera_7.bag',
         'TARGET': '/data/checkboard.yaml',
         'MODELS': 'pinhole-radtan pinhole-radtan',
@@ -99,7 +101,7 @@ def main():
         data_path: {'bind': '/data', 'mode': 'rw'},
     }
     docker_command=""
-    result = run_docker_container("kalibr:v1", docker_command, environment, volumes,client)
+    result = run_docker_container("kalibr:v2", docker_command, environment, volumes,client)
     print(result)
 
    

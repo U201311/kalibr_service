@@ -26,22 +26,15 @@ WORKDIR /app
 
 # 安装前端依赖
 COPY frontend/ /app/frontend/
-WORKDIR /app/frontend
+WORKDIR /app/frontend/project
 RUN pnpm install --registry=https://registry.npmmirror.com && \
     pnpm run build
 
 # 安装后端依赖
-WORKDIR /app
-COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt --index-url https://pypi.tuna.tsinghua.edu.cn/simple 
+# WORKDIR /app
+# RUN pip install --no-cache-dir -r requirements.txt --index-url https://pypi.tuna.tsinghua.edu.cn/simple 
 
-# 复制后端代码和配置文件
-COPY backend/ /app/
-COPY .env /app/
-COPY depoly/config/nginx_conf/ /etc/nginx/conf.d/
-COPY depoly/config/supervisor/ /etc/supervisor/conf.d/
+# EXPOSE 8000
 
-EXPOSE 8000
-
-# 启动命令
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--reload"]
+# # 启动命令
+# CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--reload"]

@@ -48,7 +48,7 @@ async def run_docker_container(image_name: str, command: str, environment, volum
         # 等待容器完成
         result = await asyncio.to_thread(container.wait)
         logs = await asyncio.to_thread(container.logs)
-        if result["StatusCode"] is not None:
+        if result["StatusCode"]  != 0:
             logger.info(f"Docker container: {result} finished with status code {result['StatusCode']}")
             await asyncio.to_thread(container.remove)
             return {"status": "success"}

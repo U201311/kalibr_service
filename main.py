@@ -24,6 +24,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(kalibr_service.router, prefix="/kalib", tags=["search"])
 
 
+
 @app.get("/", tags=["root"])
 def read_root():
     return {"message": "Welcome to the API"}

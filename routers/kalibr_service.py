@@ -5,12 +5,15 @@ import os
 from config.config import settings
 from utils.docker_async import run_docker_container
 from fastapi.responses import JSONResponse
-
+import aiofiles
+from fastapi.responses import FileResponse
+import yaml
+import shutil
 
 router = APIRouter()
 
-async def run_docker_task(environment, volumes, data_path):
-    result = await run_docker_container("kalibr:v1", "", environment, volumes)
+async def run_docker_task(docker_image, environment, volumes, data_path):
+    result = await run_docker_container(docker_image, "", environment, volumes)
     
     if result and result["status"] == "success":
         # 查看data_path路径下是否有yaml文件
@@ -47,8 +50,12 @@ async def kalib_task(background_tasks: BackgroundTasks, left_zip: UploadFile = F
     
     # Step 4: 接收上传的yaml文件，并存储在新建任务文件夹下
     yaml_file_path = os.path.join(task_data_path, yaml_file.filename)
-    with open(yaml_file_path, "wb") as f:
-        f.write(await yaml_file.read())
+    # with open(yaml_file_path, "wb") as f:
+        # f.write(await yaml_file.read())
+    async with aiofiles.open(yaml_file_path, "wb") as f:
+        content = await yaml_file.read()
+        await f.write(content)
+
     
     # Step 5: 将上传数据启动docker容器，并返回前端容器开始结果
     environment = {
@@ -69,7 +76,7 @@ async def kalib_task(background_tasks: BackgroundTasks, left_zip: UploadFile = F
     }
 
     # 启动后台任务
-    background_tasks.add_task(run_docker_task, environment, volumes, task_data_path)
+    background_tasks.add_task(run_docker_task, "kalibr:v2", environment, volumes, task_data_path)
     
     return {
         "message": "Kalib task started",
@@ -83,24 +90,59 @@ async def kalib_task_result(task_id: str):
     task_data_path = os.path.join(data_path, task_id)
     yaml_file_path = os.path.join(task_data_path, 'data', "camera-camchain.yaml")
     
+    # 读取yaml_file_path文件内容并返回
+    
+    
     if os.path.exists(yaml_file_path):
         # 构建 YAML 文件的 URL
-        yaml_url = f"/static/{task_id}/data/camera-camchain.yaml"
-        
+        # yaml_url = f"/static/{task_id}/data/camera-camchain.yaml"
+        with open(yaml_file_path, 'r') as file:
+            yaml_content = yaml.safe_load(file)
+
         # 确保文件在静态文件目录中
-        static_file_path = os.path.join("static", task_id, "data", "camera-camchain.yaml")
-        os.makedirs(os.path.dirname(static_file_path), exist_ok=True)
-        if not os.path.exists(static_file_path):
-            with open(yaml_file_path, 'r') as src_file:
-                with open(static_file_path, 'w') as dst_file:
-                    dst_file.write(src_file.read())
+        # static_file_path = os.path.join("static", task_id, "data", "camera-camchain.yaml")
+        # os.makedirs(os.path.dirname(static_file_path), exist_ok=True)
+        # if not os.path.exists(static_file_path):
+        #     with open(yaml_file_path, 'r') as src_file:
+        #         with open(static_file_path, 'w') as dst_file:
+        #             dst_file.write(src_file.read())
+
+        
+        # 返回yaml内容
         
         return JSONResponse(content={
             "message": "Kalib task completed",
-            "yaml_url": yaml_url
+            "status": 1,
+            "yaml_url": yaml_content
         })
-    else:
+    elif os.path.exists(os.path.join(task_data_path, "checkboard.yaml")):
         ## 返回JSONResponse
         return JSONResponse(content={
-            "message": "Kalib task is running"
+            "message": "Kalib task is running",
+            "status": 2,
+            "yaml_url": None
         })
+    else :
+        return JSONResponse(content={
+            "message": "Kalib task is failed",
+            "status": 3,
+            "yaml_url": None
+        })
+
+
+
+@router.get("/static/{task_id}/data/camera-camchain.yaml") 
+async def dowmload_file(task_id: str):
+    # 将文件压缩后返回给前端
+    
+    file_path = f"/static/{task_id}/data/camera-camchain.yaml"
+    zip_path = f"/static/{task_id}/camera-camchain.zip"
+
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+
+    # 压缩文件
+    with shutil.ZipFile(zip_path, 'w') as zipf:
+        zipf.write(file_path, os.path.basename(file_path))
+
+    return FileResponse(zip_path, filename="camera-camchain.zip")    

@@ -2,3 +2,11 @@
 /static/
 /uploads/
 /data/
+/.vscode/
+/.history/
+/.idea/
+/test/
+/.git/
+/.bolt/
+/.env/
+/.env.local/
