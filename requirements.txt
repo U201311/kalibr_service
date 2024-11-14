@@ -1,0 +1,10 @@
+ftfy
+regex
+tqdm
+numpy==1.21.6
+pandas==1.3.5
+pydantic_settings
+motor
+docker 
+uvicorn
+fastapi_socketio
