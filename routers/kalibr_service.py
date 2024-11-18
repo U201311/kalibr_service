@@ -9,6 +9,7 @@ import aiofiles
 from fastapi.responses import FileResponse
 import yaml
 import shutil
+import base64
 
 router = APIRouter()
 
@@ -59,7 +60,7 @@ async def kalib_task(background_tasks: BackgroundTasks, left_zip: UploadFile = F
     
     # Step 5: 将上传数据启动docker容器，并返回前端容器开始结果
     environment = {
-        'DISPLAY': ':0',  # 确保 DISPLAY 环境变量正确
+        'DISPLAY': ':1',  # 确保 DISPLAY 环境变量正确
         'QT_X11_NO_MITSHM': '1',
         'BAG': '/data/data/camera.bag',
         'TARGET': '/data/checkboard.yaml',
@@ -86,47 +87,49 @@ async def kalib_task(background_tasks: BackgroundTasks, left_zip: UploadFile = F
 
 @router.get("/kalib_task_result/{task_id}")
 async def kalib_task_result(task_id: str):
+    """
+    根据任务ID获取Kalib任务的标定结果
+    """
     data_path = settings.data_path
     task_data_path = os.path.join(data_path, task_id)
     yaml_file_path = os.path.join(task_data_path, 'data', "camera-camchain.yaml")
-    
     # 读取yaml_file_path文件内容并返回
+    pdf_file_path = os.path.join(task_data_path, 'data', "camera-report-cam.pdf")
     
-    
-    if os.path.exists(yaml_file_path):
+    if os.path.exists(yaml_file_path) and os.path.exists(pdf_file_path):
         # 构建 YAML 文件的 URL
         # yaml_url = f"/static/{task_id}/data/camera-camchain.yaml"
         with open(yaml_file_path, 'r') as file:
             yaml_content = yaml.safe_load(file)
 
-        # 确保文件在静态文件目录中
-        # static_file_path = os.path.join("static", task_id, "data", "camera-camchain.yaml")
-        # os.makedirs(os.path.dirname(static_file_path), exist_ok=True)
-        # if not os.path.exists(static_file_path):
-        #     with open(yaml_file_path, 'r') as src_file:
-        #         with open(static_file_path, 'w') as dst_file:
-        #             dst_file.write(src_file.read())
-
         
+        with open(pdf_file_path, 'rb') as pdf_file:
+            pdf_content = pdf_file.read()
+            pdf_base64 = base64.b64encode(pdf_content).decode('utf-8')
+
         # 返回yaml内容
         
         return JSONResponse(content={
             "message": "Kalib task completed",
             "status": 1,
-            "yaml_url": yaml_content
+            "yaml_url": yaml_content,
+            "pdf_url": pdf_base64
+            
         })
     elif os.path.exists(os.path.join(task_data_path, "checkboard.yaml")):
         ## 返回JSONResponse
         return JSONResponse(content={
             "message": "Kalib task is running",
             "status": 2,
-            "yaml_url": None
+            "yaml_url": None,
+            "pdf_url": None
         })
     else :
         return JSONResponse(content={
             "message": "Kalib task is failed",
             "status": 3,
-            "yaml_url": None
+            "yaml_url": None,
+            "pdf_url": None
         })
 
 

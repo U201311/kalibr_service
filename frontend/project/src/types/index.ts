@@ -17,7 +17,7 @@ export interface StereoFormData {
 
 export interface TaskStatus {
   status: '1' | '2' | '3' ;
-  progress?: number;
-  message?: string;
-  yaml_url?: any;
+  progress: number;
+  message: string;
+  yaml_url?: '';
 }

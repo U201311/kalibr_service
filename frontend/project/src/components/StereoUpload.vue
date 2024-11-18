@@ -12,9 +12,8 @@ const right_zip = ref<File | null>(null);
 const yaml_file = ref<File | null>(null);
 const loading = ref(false);
 const task_id = ref<string | null>(null);
-//const taskStatus = ref<TaskStatus | null>(null);
+const taskStatus = ref<TaskStatus | null>(null);
 const pollingInterval = ref<number | null>(null);
-const yaml_url = ref<string>('')
 
 const handleLeftZipUpload = (file: any) => {
   console.log(file,'file')
@@ -22,10 +21,6 @@ const handleLeftZipUpload = (file: any) => {
     left_zip.value = file.raw;
   }
 };
-
-const taskStatus = ref({
-  yaml_url:''
-});
 
 const handleRightZipUpload = (file: any) => {
   if (file.raw) {
@@ -56,10 +51,13 @@ const startPolling = async () => {
         if (taskResponse.status === '1') {
           ElMessage.success('Task completed successfully');
           // Reset form after successful completion
-          yaml_url.value = taskResponse.yaml_url;
-          console.log(yaml_url,'yaml_url')
-          resetForm();
-          
+          taskStatus.value.yaml_url = taskResponse.yaml_url;
+          if (taskResponse.pdf_url) {
+            taskStatus.value.pdf_url = taskResponse.pdf_url;
+          } else {
+            console.error('taskResponse.pdf_url is null or undefined');
+          }
+          stopPolling();          
         } else {
           ElMessage.error(`Task failed: ${taskResponse.message || 'Unknown error'}`);
         }
@@ -137,17 +135,45 @@ const handleSubmit = async () => {
 
 
 const downloadFile = () => {
-  const yamlContent = yaml.dump(taskStatus.yaml_url);
-  const blob = new Blob([yamlContent], { type: 'application/x-yaml' });
-  const url = window.URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = 'camera-camchain.yaml'; // 提供下载的文件名
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  window.URL.revokeObjectURL(url);
-}
+  if (taskStatus.value?.yaml_url) {
+    const yamlContent = yaml.dump(taskStatus.value.yaml_url);
+    const blob = new Blob([yamlContent], { type: 'application/x-yaml' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'camera-camchain.yaml'; // 提供下载的文件名
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } else {
+    console.error('taskStatus.yaml_url is null or undefined');
+  }
+};
+
+const downloadReport = () => {
+  if (taskStatus.value?.pdf_url) {
+    const base64String = taskStatus.value.pdf_url;
+    const byteCharacters = atob(base64String);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: 'application/pdf' });
+
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'report.pdf'; // 提供下载的文件名
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } else {
+    console.error(`taskStatus.report_url is null or undefined ${taskStatus.value?.report_url}`);
+  }
+};
 
 
 // Clean up polling when component is unmounted
@@ -219,17 +245,12 @@ onUnmounted(() => {
         >
           Submit
         </el-button>
-        <el-button
-          v-if="yaml_url"
-          type="primary" 
-        >
-          <a class="download" :href="`http://10.112.12.60:8000${yaml_url}`" download="camera-camchain.yaml">Download</a>
-        </el-button>
       </el-form-item>
 
       <!-- Task Status Display -->
-      <div v-if="taskStatus.yaml_url">
+      <div v-if="taskStatus?.yaml_url">
           <el-button type="primary" @click="downloadFile">下载文件</el-button>
+          <el-button type="primary" @click="downloadReport">下载报告</el-button>
       </div>
 
     </el-form>

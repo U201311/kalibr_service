@@ -22,6 +22,8 @@ async def image_exists_locally(image_name: str, client):
 async def pull_docker_image(image_name: str, client):
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, client.images.pull, image_name)
+    
+    
 
 async def run_docker_container(image_name: str, command: str, environment, volumes, client=None):
     if client is None:
