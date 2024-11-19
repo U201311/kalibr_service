@@ -27,14 +27,23 @@ WORKDIR /app
 # 安装前端依赖
 COPY frontend/ /app/frontend/
 WORKDIR /app/frontend/project
-RUN pnpm install --registry=https://registry.npmmirror.com && \
+
+
+# 安装前端依赖并添加调试信息
+# 
+RUN pnpm install --registry=https://registry.npmmirror.com  && \
+    pnpm add -D typescript@latest vue-tsc@latest  --registry=https://registry.npmmirror.com  && \
     pnpm run build
 
+COPY backend/ /app/backend
+# RUN pnpm run build
+# pnpm add -D typescript@latest vue-tsc@latest  --registry=https://registry.npmmirror.com  
 # 安装后端依赖
-# WORKDIR /app
-# RUN pip install --no-cache-dir -r requirements.txt --index-url https://pypi.tuna.tsinghua.edu.cn/simple 
+WORKDIR /app/backend
+RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
-# EXPOSE 8000
+COPY depoly/config/nginx_conf/* /etc/nginx/conf.d/
+COPY depoly/config/supervisor/*.conf /etc/supervisor/conf.d/
+EXPOSE 8000
+CMD ["sh", "-c", "/usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf"]
 
-# # 启动命令
-# CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--reload"]

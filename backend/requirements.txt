@@ -8,3 +8,5 @@ motor
 docker 
 uvicorn
 fastapi_socketio
+PyYAML
+aiofiles
