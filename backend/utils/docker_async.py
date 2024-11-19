@@ -1,7 +1,8 @@
 import asyncio
 import docker
 from docker.errors import ContainerError, ImageNotFound, APIError
-from loguru import logger
+from utils.logger import logger
+
 
 async def docker_login(client, username, password):
     loop = asyncio.get_event_loop()
@@ -45,11 +46,12 @@ async def run_docker_container(image_name: str, command: str, environment, volum
         docker_run_cmd = f"docker run -it --rm  -e {environment} -v {volumes}"
         docker_run_cmd += f" {image_name} {command} --name {container.name} "
         
-        print(f"Running Docker container with command: {docker_run_cmd}")
+        logger.info(f"Running Docker container with command: {docker_run_cmd}")
         
         # 等待容器完成
         result = await asyncio.to_thread(container.wait)
         logs = await asyncio.to_thread(container.logs)
+        logger.info(f"Container logs: {logs}")
         if result["StatusCode"]  != 0:
             logger.info(f"Docker container: {result} finished with status code {result['StatusCode']}")
             await asyncio.to_thread(container.remove)

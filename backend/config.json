@@ -1,5 +1,6 @@
 {
     "log-level":"info",
     "log-file":"./logs/app.log",
-    "root-dir":"/home/ying01li/kalib_service/uploads"
+    "root-dir":"/app/uploads",
+    "host-dir":"/home/ying01li/kalib_service/uploads"
 }

@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse
 import yaml
 import shutil
 import base64
+from utils.logger import logger
 
 router = APIRouter()
 
@@ -25,8 +26,11 @@ async def run_docker_task(docker_image, environment, volumes, data_path):
 
 @router.post("/kalib_task")
 async def kalib_task(background_tasks: BackgroundTasks, left_zip: UploadFile = File(...), right_zip: UploadFile = File(...), yaml_file: UploadFile = File(...)):
+    logger.info("Kalib task started")
     # Step 1: 新建任务存储文件的地址
     data_path = settings.data_path
+    if not os.path.exists(data_path):
+        os.makedirs(data_path)
     task_id = str(uuid.uuid4())
     task_data_path = os.path.join(data_path, task_id)
     os.makedirs(task_data_path, exist_ok=True)
@@ -39,7 +43,8 @@ async def kalib_task(background_tasks: BackgroundTasks, left_zip: UploadFile = F
         f.write(await left_zip.read())
     with zipfile.ZipFile(left_zip_path, 'r') as zip_ref:
         zip_ref.extractall(left_data_path)
-    
+    os.remove(left_zip_path)
+
     # Step 3: 接收上传的right压缩文件，并存储在新建任务下的data/right文件夹下
     right_data_path = os.path.join(task_data_path, "data", "right")
     os.makedirs(right_data_path, exist_ok=True)
@@ -48,7 +53,8 @@ async def kalib_task(background_tasks: BackgroundTasks, left_zip: UploadFile = F
         f.write(await right_zip.read())
     with zipfile.ZipFile(right_zip_path, 'r') as zip_ref:
         zip_ref.extractall(right_data_path)
-    
+    os.remove(right_zip_path)
+
     # Step 4: 接收上传的yaml文件，并存储在新建任务文件夹下
     yaml_file_path = os.path.join(task_data_path, yaml_file.filename)
     # with open(yaml_file_path, "wb") as f:
@@ -57,12 +63,15 @@ async def kalib_task(background_tasks: BackgroundTasks, left_zip: UploadFile = F
         content = await yaml_file.read()
         await f.write(content)
 
+    "获取宿主机地址"
+    task_result_path = os.path.join(settings.host_path, task_id)
+    
     
     # Step 5: 将上传数据启动docker容器，并返回前端容器开始结果
     environment = {
         'DISPLAY': ':1',  # 确保 DISPLAY 环境变量正确
         'QT_X11_NO_MITSHM': '1',
-        'BAG': '/data/data/camera.bag',
+        'BAG': '/data/data/camera_7.bag',
         'TARGET': '/data/checkboard.yaml',
         'MODELS': 'pinhole-radtan pinhole-radtan',
         'LEFT_TOPIC': '/camera/left/image_raw',
@@ -73,7 +82,7 @@ async def kalib_task(background_tasks: BackgroundTasks, left_zip: UploadFile = F
     
     volumes = {
         '/tmp/.X11-unix': {'bind': '/tmp/.X11-unix', 'mode': 'rw'},
-        task_data_path: {'bind': '/data', 'mode': 'rw'},
+        task_result_path: {'bind': '/data', 'mode': 'rw'},
     }
 
     # 启动后台任务
@@ -92,9 +101,9 @@ async def kalib_task_result(task_id: str):
     """
     data_path = settings.data_path
     task_data_path = os.path.join(data_path, task_id)
-    yaml_file_path = os.path.join(task_data_path, 'data', "camera-camchain.yaml")
+    yaml_file_path = os.path.join(task_data_path, 'data', "camera_7-camchain.yaml")
     # 读取yaml_file_path文件内容并返回
-    pdf_file_path = os.path.join(task_data_path, 'data', "camera-report-cam.pdf")
+    pdf_file_path = os.path.join(task_data_path, 'data', "camera_7-report-cam.pdf")
     
     if os.path.exists(yaml_file_path) and os.path.exists(pdf_file_path):
         # 构建 YAML 文件的 URL

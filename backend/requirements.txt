@@ -1,12 +1,10 @@
-ftfy
-regex
-tqdm
-numpy==1.21.6
-pandas==1.3.5
-pydantic_settings
-motor
 docker 
+fastapi
 uvicorn
+pydantic_settings
 fastapi_socketio
+fastapi-cors
 PyYAML
 aiofiles
+loguru
+python-multipart

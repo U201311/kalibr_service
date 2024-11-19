@@ -1,6 +1,7 @@
 import docker
 import asyncio
-from loguru import logger
+
+from utils.logger import logger
 
 def pull_docker_image(image_name: str, client=None):
     if client is None:

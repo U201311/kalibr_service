@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     
     # 设置root-path 
     data_path: str = Field(default="./", alias="root-dir")
+    host_path: str = Field(default="/data", alias="host-dir")
 
     @classmethod
     def from_json(cls, path: Path):

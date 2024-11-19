@@ -11,10 +11,15 @@ app = FastAPI(
     openapi_url="/api/openapi.json"
 )
 
+origins = [
+    "http://localhost:3000",
+    # 你可以添加更多的允许源
+]
+
 # 配置CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

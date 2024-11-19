@@ -2,8 +2,10 @@
 import axios from 'axios';
 import type { UploadResponse, FormData, StereoFormData, TaskStatus } from '../types';
 
-const API_BASE_URL = 'http://10.112.12.60:8000/kalib';
-
+// const API_BASE_URL = 'http://10.112.12.60:8000/kalib';
+//const API_BASE_URL = `${import.meta.env.API_BASE_URL}/kalib`;
+//const API_BASE_URL = 'http://127.0.0.1:8000/kalib';
+const API_BASE_URL = '/kalib';
 export const uploadMonocular = async (formData: FormData): Promise<UploadResponse> => {
   const data = new FormData();
   if (formData.zipFile) {
